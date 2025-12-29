@@ -5,10 +5,12 @@ import com.example.crudjob.entity.enums.JobType;
 
 import jakarta.persistence.*;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "jobs")
 @Builder
+@NoArgsConstructor
 public class Job {
 
     public Job(Long id, String title, String company, String location, Integer salary, JobType type, JobStatus status,
