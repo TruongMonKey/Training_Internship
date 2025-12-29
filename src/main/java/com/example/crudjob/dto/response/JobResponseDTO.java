@@ -4,7 +4,9 @@ import com.example.crudjob.entity.enums.JobStatus;
 import com.example.crudjob.entity.enums.JobType;
 
 import lombok.Builder;
+import lombok.Getter;
 
+@Getter
 @Builder
 public class JobResponseDTO {
 
@@ -16,37 +18,5 @@ public class JobResponseDTO {
     private JobType type;
     private JobStatus status;
     private String description;
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getCompany() {
-        return company;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public Integer getSalary() {
-        return salary;
-    }
-
-    public JobType getType() {
-        return type;
-    }
-
-    public JobStatus getStatus() {
-        return status;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 
 }

@@ -6,12 +6,6 @@ package com.example.crudjob.entity.constant;
 public class AppConstants {
 
     // ============ Pagination Constants ============
-    /** Trang mặc định trong phân trang */
-    public static final int DEFAULT_PAGE = 0;
-
-    /** Kích thước trang mặc định trong phân trang */
-    public static final int DEFAULT_PAGE_SIZE = 10;
-
     /** Trang mặc định trong phân trang (dạng String cho @RequestParam) */
     public static final String DEFAULT_PAGE_STR = "0";
 

@@ -2,8 +2,8 @@ package com.example.crudjob.entity;
 
 import com.example.crudjob.entity.enums.JobStatus;
 import com.example.crudjob.entity.enums.JobType;
-
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 
@@ -11,49 +11,40 @@ import lombok.NoArgsConstructor;
 @Table(name = "jobs")
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Job {
-
-    public Job(Long id, String title, String company, String location, Integer salary, JobType type, JobStatus status,
-            String description) {
-        this.id = id;
-        this.title = title;
-        this.company = company;
-        this.location = location;
-        this.salary = salary;
-        this.type = type;
-        this.status = status;
-        this.description = description;
-    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String company;
 
+    @Column(nullable = false, length = 255)
     private String location;
 
+    @Column(nullable = false)
     private Integer salary;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private JobType type;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // ===== Getter / Setter =====
+
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getTitle() {
@@ -111,5 +102,4 @@ public class Job {
     public void setDescription(String description) {
         this.description = description;
     }
-
 }

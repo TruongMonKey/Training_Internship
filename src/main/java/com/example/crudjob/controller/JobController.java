@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.crudjob.dto.request.JobRequestDTO;
-import com.example.crudjob.dto.response.ApiResponse;
+import com.example.crudjob.dto.response.ApiRes;
 import com.example.crudjob.dto.response.JobResponseDTO;
 import com.example.crudjob.dto.response.PageResponseDTO;
 import com.example.crudjob.entity.constant.AppConstants;
@@ -21,6 +21,8 @@ import com.example.crudjob.service.JobService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,12 +51,17 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với thông tin công việc vừa tạo
          */
         @Operation(summary = "Create new job")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "201", description = "Job created successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @PostMapping
-        public ResponseEntity<ApiResponse<JobResponseDTO>> create(
+        public ResponseEntity<ApiRes<JobResponseDTO>> create(
                         @Valid @RequestBody JobRequestDTO dto) {
                 JobResponseDTO createdJob = jobService.create(dto);
                 return ResponseEntity.status(HttpStatus.CREATED)
-                                .body(ApiResponse.success(
+                                .body(ApiRes.success(
                                                 createdJob,
                                                 AppConstants.JOB_CREATED_SUCCESS,
                                                 HttpStatus.CREATED.value()));
@@ -70,15 +77,20 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với danh sách công việc đã phân trang
          */
         @Operation(summary = "Get all jobs with pagination")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @GetMapping
-        public ResponseEntity<ApiResponse<PageResponseDTO<JobResponseDTO>>> getAllWithPaging(
+        public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> getAllWithPaging(
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.getAll(pageable);
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 response,
                                                 AppConstants.JOB_LIST_SUCCESS,
                                                 HttpStatus.OK.value()));
@@ -93,12 +105,17 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với thông tin chi tiết công việc
          */
         @Operation(summary = "Get job by ID")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Job retrieved successfully"),
+                        @ApiResponse(responseCode = "404", description = "Job not found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @GetMapping("/{id}")
-        public ResponseEntity<ApiResponse<JobResponseDTO>> getById(
+        public ResponseEntity<ApiRes<JobResponseDTO>> getById(
                         @PathVariable Long id) {
                 JobResponseDTO job = jobService.getById(id);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 job,
                                                 AppConstants.JOB_GET_SUCCESS,
                                                 HttpStatus.OK.value()));
@@ -114,13 +131,19 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với thông tin công việc đã cập nhật
          */
         @Operation(summary = "Update job")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Job updated successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid input data"),
+                        @ApiResponse(responseCode = "404", description = "Job not found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @PutMapping("/{id}")
-        public ResponseEntity<ApiResponse<JobResponseDTO>> update(
+        public ResponseEntity<ApiRes<JobResponseDTO>> update(
                         @PathVariable Long id,
                         @Valid @RequestBody JobRequestDTO dto) {
                 JobResponseDTO updatedJob = jobService.update(id, dto);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 updatedJob,
                                                 AppConstants.JOB_UPDATED_SUCCESS,
                                                 HttpStatus.OK.value()));
@@ -135,12 +158,17 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse xác nhận xoá thành công
          */
         @Operation(summary = "Delete job")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Job deleted successfully"),
+                        @ApiResponse(responseCode = "404", description = "Job not found"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @DeleteMapping("/{id}")
-        public ResponseEntity<ApiResponse<Void>> delete(
+        public ResponseEntity<ApiRes<Void>> delete(
                         @PathVariable Long id) {
                 jobService.delete(id);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 null,
                                                 AppConstants.JOB_DELETED_SUCCESS,
                                                 HttpStatus.OK.value()));
@@ -159,8 +187,13 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với danh sách công việc tìm được
          */
         @Operation(summary = "Search jobs by title")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Jobs found successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @GetMapping("/search/title")
-        public ResponseEntity<ApiResponse<PageResponseDTO<JobResponseDTO>>> searchByTitle(
+        public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByTitle(
                         @Parameter(description = "Job title to search") @RequestParam String title,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
@@ -168,7 +201,7 @@ public class JobController {
                 var pageData = jobService.searchByTitle(title, pageable);
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 response,
                                                 AppConstants.SEARCH_BY_TITLE_SUCCESS,
                                                 HttpStatus.OK.value()));
@@ -185,8 +218,13 @@ public class JobController {
          * @return ResponseEntity chứa ApiResponse với danh sách công việc tìm được
          */
         @Operation(summary = "Search jobs by company")
+        @ApiResponses(value = {
+                        @ApiResponse(responseCode = "200", description = "Jobs found successfully"),
+                        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error")
+        })
         @GetMapping("/search/company")
-        public ResponseEntity<ApiResponse<PageResponseDTO<JobResponseDTO>>> searchByCompany(
+        public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByCompany(
                         @Parameter(description = "Company name to search") @RequestParam String company,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
@@ -194,7 +232,7 @@ public class JobController {
                 var pageData = jobService.searchByCompany(company, pageable);
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
                 return ResponseEntity.ok(
-                                ApiResponse.success(
+                                ApiRes.success(
                                                 response,
                                                 AppConstants.SEARCH_BY_COMPANY_SUCCESS,
                                                 HttpStatus.OK.value()));

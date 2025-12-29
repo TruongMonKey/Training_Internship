@@ -2,12 +2,16 @@ package com.example.crudjob.dto.response;
 
 import java.time.LocalDateTime;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
-public class ApiResponse<T> {
+@AllArgsConstructor
+@NoArgsConstructor
+public class ApiRes<T> {
 
     private boolean success;
     private int status;
@@ -21,8 +25,8 @@ public class ApiResponse<T> {
      * =======================
      */
 
-    public static <T> ApiResponse<T> success(T data, String message, int status) {
-        return ApiResponse.<T>builder()
+    public static <T> ApiRes<T> success(T data, String message, int status) {
+        return ApiRes.<T>builder()
                 .success(true)
                 .status(status)
                 .message(message)
@@ -31,8 +35,8 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(String message, int status) {
-        return ApiResponse.<T>builder()
+    public static <T> ApiRes<T> error(String message, int status) {
+        return ApiRes.<T>builder()
                 .success(false)
                 .status(status)
                 .message(message)

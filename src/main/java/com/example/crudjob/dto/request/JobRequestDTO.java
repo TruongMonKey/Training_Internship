@@ -16,6 +16,7 @@ public class JobRequestDTO {
     @NotBlank(message = "Company is required")
     private String company;
 
+    @NotBlank(message = "Location is required")
     private String location;
 
     @Min(value = 0, message = "Salary must be >= 0")

@@ -9,8 +9,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.example.crudjob.constant.AppConstants;
-import com.example.crudjob.dto.response.ApiResponse;
+import com.example.crudjob.dto.response.ApiRes;
+import com.example.crudjob.entity.constant.AppConstants;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -23,10 +23,10 @@ public class GlobalExceptionHandler {
          * @return ResponseEntity với status 404
          */
         @ExceptionHandler(ResourceNotFoundException.class)
-        public ResponseEntity<ApiResponse<Void>> handleNotFound(
+        public ResponseEntity<ApiRes<Void>> handleNotFound(
                         ResourceNotFoundException ex) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                .body(ApiResponse.error(
+                                .body(ApiRes.error(
                                                 ex.getMessage(),
                                                 HttpStatus.NOT_FOUND.value()));
         }
@@ -39,10 +39,10 @@ public class GlobalExceptionHandler {
          * @return ResponseEntity với status 400
          */
         @ExceptionHandler(BadRequestException.class)
-        public ResponseEntity<ApiResponse<Void>> handleBadRequest(
+        public ResponseEntity<ApiRes<Void>> handleBadRequest(
                         BadRequestException ex) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                .body(ApiResponse.error(
+                                .body(ApiRes.error(
                                                 ex.getMessage(),
                                                 HttpStatus.BAD_REQUEST.value()));
         }
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
          * @return ResponseEntity với status 400 và chi tiết lỗi validation
          */
         @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(
+        public ResponseEntity<ApiRes<Map<String, String>>> handleValidation(
                         MethodArgumentNotValidException ex) {
                 Map<String, String> errors = new HashMap<>();
 
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
                                                 error.getDefaultMessage()));
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                                .body(ApiResponse.<Map<String, String>>builder()
+                                .body(ApiRes.<Map<String, String>>builder()
                                                 .success(false)
                                                 .status(400)
                                                 .message(AppConstants.VALIDATION_FAILED)
@@ -83,9 +83,9 @@ public class GlobalExceptionHandler {
          * @return ResponseEntity với status 500
          */
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<ApiResponse<Void>> handleOther(Exception ex) {
+        public ResponseEntity<ApiRes<Void>> handleOther(Exception ex) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(ApiResponse.error(
+                                .body(ApiRes.error(
                                                 AppConstants.INTERNAL_SERVER_ERROR,
                                                 500));
         }
