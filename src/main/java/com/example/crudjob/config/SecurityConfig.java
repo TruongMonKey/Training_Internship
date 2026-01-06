@@ -1,6 +1,7 @@
 package com.example.crudjob.config;
 
 import com.example.crudjob.service.JwtService;
+import com.example.crudjob.service.RolePermissionResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Security Configuration
  *
- * Configures Spring Security with JWT authentication and role-based
- * authorization
+ * Configures Spring Security with JWT authentication and dynamic role-based
+ * authorization using RolePermissionResolver
  */
 @Configuration
 @EnableWebSecurity
@@ -27,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtService jwtService;
+    private final RolePermissionResolver rolePermissionResolver;
 
     /**
      * Configure security filter chain
@@ -63,9 +65,9 @@ public class SecurityConfig {
                         // Any other authenticated requests
                         .anyRequest().authenticated())
 
-                // Add JWT authentication filter
+                // Add JWT authentication filter with RolePermissionResolver
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtService),
+                        new JwtAuthenticationFilter(jwtService, rolePermissionResolver),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

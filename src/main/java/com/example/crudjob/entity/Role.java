@@ -1,6 +1,8 @@
 package com.example.crudjob.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,6 +11,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+
+import com.example.crudjob.entity.enums.ERole;
 
 import lombok.Data;
 
@@ -23,8 +28,9 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Ví dụ: ROLE_ADMIN, ROLE_USER
-    private String name;
+    @NotNull(message = "Role name cannot be null")
+    @Enumerated(EnumType.STRING)
+    private ERole name;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permission", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))

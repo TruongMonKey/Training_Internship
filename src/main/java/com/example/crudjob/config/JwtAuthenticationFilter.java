@@ -1,11 +1,11 @@
 package com.example.crudjob.config;
 
 import com.example.crudjob.service.JwtService;
+import com.example.crudjob.service.RolePermissionResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -18,19 +18,20 @@ import io.jsonwebtoken.Claims;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 /**
  * JWT Authentication Filter
  *
  * Intercepts every request and validates JWT token from Authorization header
+ * Resolves permissions dynamically from roles using RolePermissionResolver
  */
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final RolePermissionResolver rolePermissionResolver;
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
@@ -51,20 +52,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 @SuppressWarnings("unchecked")
                 List<String> roles = claims.get("roles", List.class);
 
-                // Lấy permissions từ claims
-                @SuppressWarnings("unchecked")
-                List<String> permissions = claims.get("permissions", List.class);
-
-                // Tạo authorities từ roles và permissions
-                Collection<GrantedAuthority> authorities = new HashSet<>();
-
-                if (roles != null) {
-                    roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role)));
-                }
-
-                if (permissions != null) {
-                    permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission)));
-                }
+                // Resolve permissions từ roles (tự động)
+                Collection<GrantedAuthority> authorities = rolePermissionResolver.resolveAuthorities(roles);
 
                 // Tạo authentication token
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username,
@@ -73,7 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Set authentication vào SecurityContext
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("JWT Token validated for user: {}", username);
+                log.debug("JWT Token validated for user: {} with {} authorities", username, authorities.size());
             }
         } catch (Exception e) {
             log.error("Could not validate JWT token: {}", e.getMessage());

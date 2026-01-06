@@ -5,6 +5,7 @@ import com.example.crudjob.dto.request.RegisterRequestDTO;
 import com.example.crudjob.dto.response.AuthResponseDTO;
 import com.example.crudjob.entity.Role;
 import com.example.crudjob.entity.User;
+import com.example.crudjob.entity.enums.ERole;
 import com.example.crudjob.exception.BadRequestException;
 import com.example.crudjob.exception.ResourceNotFoundException;
 import com.example.crudjob.repository.RoleRepository;
@@ -85,7 +86,7 @@ public class AuthServiceImpl implements IAuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         // Gán default role (USER)
-        Role userRole = roleRepository.findByName("ROLE_USER")
+        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
                 .orElseThrow(() -> new ResourceNotFoundException("Default USER role not found"));
         user.setRoles(new HashSet<>(Collections.singletonList(userRole)));
 
@@ -138,17 +139,17 @@ public class AuthServiceImpl implements IAuthService {
     private AuthResponseDTO generateAuthResponse(User user) {
         // Lấy roles
         Set<String> roles = user.getRoles().stream()
-                .map(Role::getName)
+                .map(role -> role.getName().getValue())
                 .collect(Collectors.toSet());
 
-        // Lấy permissions từ roles
+        // Lấy permissions từ roles (chỉ để return trong response, không lưu vào token)
         Set<String> permissions = user.getRoles().stream()
                 .flatMap(role -> role.getPermissions().stream())
                 .map(permission -> permission.getName())
                 .collect(Collectors.toSet());
 
-        // Generate tokens
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roles, permissions);
+        // Generate tokens (chỉ lưu userId, username, roles - không lưu permissions)
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roles);
         String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
 
         return AuthResponseDTO.builder()

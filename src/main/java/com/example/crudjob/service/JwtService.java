@@ -30,15 +30,14 @@ public class JwtService {
     }
 
     /**
-     * Tạo Access Token với user info, roles và permissions
+     * Tạo Access Token với user info và roles
+     * (Permissions được xác định từ roles)
      */
-    public String generateAccessToken(Long userId, String username, Collection<String> roles,
-            Collection<String> permissions) {
+    public String generateAccessToken(Long userId, String username, Collection<String> roles) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
                 .claim("roles", roles)
-                .claim("permissions", permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(keyPair.getPrivate(), SignatureAlgorithm.RS256)

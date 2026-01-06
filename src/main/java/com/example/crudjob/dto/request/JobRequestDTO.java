@@ -7,19 +7,29 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class JobRequestDTO {
 
-    @NotBlank(message = "Title is required")
+    @NotBlank(message = "Job title is required")
+    @Size(min = 3, max = 255, message = "Title must be between 3 and 255 characters")
     private String title;
 
-    @NotBlank(message = "Company is required")
+    @NotBlank(message = "Company name is required")
+    @Size(min = 2, max = 255, message = "Company must be between 2 and 255 characters")
     private String company;
 
-    @NotBlank(message = "Location is required")
+    @NotBlank(message = "Job location is required")
+    @Size(min = 2, max = 255, message = "Location must be between 2 and 255 characters")
     private String location;
 
-    @Min(value = 0, message = "Salary must be >= 0")
+    @NotNull(message = "Salary is required")
+    @Min(value = 0, message = "Salary must be greater than or equal to 0")
     private Integer salary;
 
     @NotNull(message = "Job type is required")
@@ -28,63 +38,6 @@ public class JobRequestDTO {
     @NotNull(message = "Job status is required")
     private EJobStatus status;
 
-    @Size(max = 1000, message = "Description max 1000 characters")
+    @Size(max = 2000, message = "Description must not exceed 2000 characters")
     private String description;
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getCompany() {
-        return company;
-    }
-
-    public void setCompany(String company) {
-        this.company = company;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public Integer getSalary() {
-        return salary;
-    }
-
-    public void setSalary(Integer salary) {
-        this.salary = salary;
-    }
-
-    public EJobType getType() {
-        return type;
-    }
-
-    public void setType(EJobType type) {
-        this.type = type;
-    }
-
-    public EJobStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(EJobStatus status) {
-        this.status = status;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
 }
