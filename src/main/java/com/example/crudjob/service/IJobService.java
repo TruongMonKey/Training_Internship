@@ -7,7 +7,7 @@ import com.example.crudjob.dto.response.JobResponseDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-public interface JobService {
+public interface IJobService {
 
     /**
      * Tạo mới Job

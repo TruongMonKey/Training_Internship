@@ -1,7 +1,7 @@
 package com.example.crudjob.dto.request;
 
-import com.example.crudjob.entity.enums.JobStatus;
-import com.example.crudjob.entity.enums.JobType;
+import com.example.crudjob.entity.enums.EJobStatus;
+import com.example.crudjob.entity.enums.EJobType;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -23,10 +23,10 @@ public class JobRequestDTO {
     private Integer salary;
 
     @NotNull(message = "Job type is required")
-    private JobType type;
+    private EJobType type;
 
     @NotNull(message = "Job status is required")
-    private JobStatus status;
+    private EJobStatus status;
 
     @Size(max = 1000, message = "Description max 1000 characters")
     private String description;
@@ -63,19 +63,19 @@ public class JobRequestDTO {
         this.salary = salary;
     }
 
-    public JobType getType() {
+    public EJobType getType() {
         return type;
     }
 
-    public void setType(JobType type) {
+    public void setType(EJobType type) {
         this.type = type;
     }
 
-    public JobStatus getStatus() {
+    public EJobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(JobStatus status) {
+    public void setStatus(EJobStatus status) {
         this.status = status;
     }
 

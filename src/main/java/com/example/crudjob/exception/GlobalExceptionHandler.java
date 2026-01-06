@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.crudjob.dto.response.ApiRes;
-import com.example.crudjob.entity.constant.AppConstants;
+import com.example.crudjob.utils.AppConstants;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {

@@ -11,7 +11,7 @@ import com.example.crudjob.dto.response.JobResponseDTO;
 import com.example.crudjob.entity.Job;
 import com.example.crudjob.exception.ResourceNotFoundException;
 import com.example.crudjob.repository.JobRepository;
-import com.example.crudjob.service.JobService;
+import com.example.crudjob.service.IJobService;
 import com.example.crudjob.utils.JobMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-public class JobServiceImpl implements JobService {
+public class JobServiceImpl implements IJobService {
 
     private final JobRepository jobRepository;
 

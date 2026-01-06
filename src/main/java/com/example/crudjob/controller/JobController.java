@@ -16,8 +16,8 @@ import com.example.crudjob.dto.request.JobRequestDTO;
 import com.example.crudjob.dto.response.ApiRes;
 import com.example.crudjob.dto.response.JobResponseDTO;
 import com.example.crudjob.dto.response.PageResponseDTO;
-import com.example.crudjob.entity.constant.AppConstants;
-import com.example.crudjob.service.JobService;
+import com.example.crudjob.service.IJobService;
+import com.example.crudjob.utils.AppConstants;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -29,10 +29,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 
 /**
- * REST Controller quản lý các API liên quan đến công việc (Job)
- * 
- * Cung cấp các endpoint CRUD (Create, Read, Update, Delete) và tìm kiếm công
- * việc
+ * REST Controller for managing Job-related APIs
+ *
+ * Provides CRUD (Create, Read, Update, Delete) endpoints
+ * and job search functionalities.
  */
 @RestController
 @RequestMapping("/api/jobs")
@@ -40,26 +40,28 @@ import org.springframework.data.domain.PageRequest;
 @Tag(name = "Job API", description = "CRUD Job Management")
 public class JobController {
 
-        private final JobService jobService;
+        private final IJobService jobService;
 
         /* ================= CREATE ================= */
 
         /**
-         * Tạo mới một công việc
-         * 
-         * @param dto Dữ liệu công việc cần tạo
-         * @return ResponseEntity chứa ApiResponse với thông tin công việc vừa tạo
+         * Create a new job
+         *
+         * @param dto Job data to be created
+         * @return ResponseEntity containing ApiResponse with created job information
          */
-        @Operation(summary = "Create new job")
+        @Operation(summary = "Create new job", description = "Create a new job using the data provided in the request body")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "201", description = "Job created successfully"),
-                        @ApiResponse(responseCode = "400", description = "Invalid input data"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "201", description = "Job created successfully. Returns the created job with an auto-generated ID"),
+                        @ApiResponse(responseCode = "400", description = "Invalid input data. Required fields may be missing or improperly formatted"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @PostMapping
         public ResponseEntity<ApiRes<JobResponseDTO>> create(
                         @Valid @RequestBody JobRequestDTO dto) {
+
                 JobResponseDTO createdJob = jobService.create(dto);
+
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(ApiRes.success(
                                                 createdJob,
@@ -70,25 +72,28 @@ public class JobController {
         /* ================= GET ALL ================= */
 
         /**
-         * Lấy danh sách tất cả công việc có hỗ trợ phân trang
-         * 
-         * @param page Số trang (mặc định 0)
-         * @param size Số lượng phần tử trên một trang (mặc định 10)
-         * @return ResponseEntity chứa ApiResponse với danh sách công việc đã phân trang
+         * Retrieve all jobs with pagination support
+         *
+         * @param page Page number (default is 0)
+         * @param size Number of items per page (default is 10)
+         * @return ResponseEntity containing paginated job list
          */
-        @Operation(summary = "Get all jobs with pagination")
+        @Operation(summary = "Get all jobs with pagination", description = "Retrieve all jobs with pagination support using page number and page size")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully"),
-                        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully with pagination metadata"),
+                        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters. Page or size may be negative or exceed limits"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> getAllWithPaging(
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.getAll(pageable);
+
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 response,
@@ -99,21 +104,23 @@ public class JobController {
         /* ================= GET BY ID ================= */
 
         /**
-         * Lấy chi tiết một công việc theo ID
-         * 
-         * @param id ID của công việc cần lấy
-         * @return ResponseEntity chứa ApiResponse với thông tin chi tiết công việc
+         * Retrieve job details by ID
+         *
+         * @param id ID of the job to retrieve
+         * @return ResponseEntity containing job details
          */
-        @Operation(summary = "Get job by ID")
+        @Operation(summary = "Get job by ID", description = "Retrieve full details of a specific job using its ID")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job retrieved successfully"),
-                        @ApiResponse(responseCode = "404", description = "Job not found"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping("/{id}")
         public ResponseEntity<ApiRes<JobResponseDTO>> getById(
                         @PathVariable Long id) {
+
                 JobResponseDTO job = jobService.getById(id);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 job,
@@ -124,24 +131,26 @@ public class JobController {
         /* ================= UPDATE ================= */
 
         /**
-         * Cập nhật thông tin một công việc
-         * 
-         * @param id  ID của công việc cần cập nhật
-         * @param dto Dữ liệu cập nhật của công việc
-         * @return ResponseEntity chứa ApiResponse với thông tin công việc đã cập nhật
+         * Update an existing job
+         *
+         * @param id  ID of the job to update
+         * @param dto Updated job data
+         * @return ResponseEntity containing updated job information
          */
-        @Operation(summary = "Update job")
+        @Operation(summary = "Update job", description = "Update an existing job by providing its ID and new data")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job updated successfully"),
                         @ApiResponse(responseCode = "400", description = "Invalid input data"),
-                        @ApiResponse(responseCode = "404", description = "Job not found"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @PutMapping("/{id}")
         public ResponseEntity<ApiRes<JobResponseDTO>> update(
                         @PathVariable Long id,
                         @Valid @RequestBody JobRequestDTO dto) {
+
                 JobResponseDTO updatedJob = jobService.update(id, dto);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 updatedJob,
@@ -152,21 +161,23 @@ public class JobController {
         /* ================= DELETE ================= */
 
         /**
-         * Xoá một công việc theo ID
-         * 
-         * @param id ID của công việc cần xoá
-         * @return ResponseEntity chứa ApiResponse xác nhận xoá thành công
+         * Delete a job by ID
+         *
+         * @param id ID of the job to delete
+         * @return ResponseEntity confirming successful deletion
          */
-        @Operation(summary = "Delete job")
+        @Operation(summary = "Delete job", description = "Delete a job from the system. This action is irreversible")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job deleted successfully"),
-                        @ApiResponse(responseCode = "404", description = "Job not found"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @DeleteMapping("/{id}")
         public ResponseEntity<ApiRes<Void>> delete(
                         @PathVariable Long id) {
+
                 jobService.delete(id);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 null,
@@ -177,29 +188,32 @@ public class JobController {
         /* ================= SEARCH ================= */
 
         /**
-         * Tìm kiếm công việc theo tiêu đề
-         * 
-         * Tìm kiếm không phân biệt chữ hoa/thường, hỗ trợ tìm kiếm LIKE (chứa chuỗi)
-         * 
-         * @param title Tiêu đề công việc cần tìm kiếm
-         * @param page  Số trang (mặc định 0)
-         * @param size  Số lượng phần tử trên một trang (mặc định 10)
-         * @return ResponseEntity chứa ApiResponse với danh sách công việc tìm được
+         * Search jobs by title
+         *
+         * Case-insensitive search with LIKE (contains) support
+         *
+         * @param title Job title to search
+         * @param page  Page number (default is 0)
+         * @param size  Page size (default is 10)
+         * @return ResponseEntity containing paginated search results
          */
-        @Operation(summary = "Search jobs by title")
+        @Operation(summary = "Search jobs by title", description = "Search jobs by title using case-insensitive and partial match (LIKE) with pagination")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Jobs found successfully"),
+                        @ApiResponse(responseCode = "200", description = "Search completed successfully"),
                         @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping("/search/title")
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByTitle(
                         @Parameter(description = "Job title to search") @RequestParam String title,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.searchByTitle(title, pageable);
+
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 response,
@@ -208,29 +222,32 @@ public class JobController {
         }
 
         /**
-         * Tìm kiếm công việc theo tên công ty
-         * 
-         * Tìm kiếm không phân biệt chữ hoa/thường, hỗ trợ tìm kiếm LIKE (chứa chuỗi)
-         * 
-         * @param company Tên công ty cần tìm kiếm
-         * @param page    Số trang (mặc định 0)
-         * @param size    Số lượng phần tử trên một trang (mặc định 10)
-         * @return ResponseEntity chứa ApiResponse với danh sách công việc tìm được
+         * Search jobs by company name
+         *
+         * Case-insensitive search with LIKE (contains) support
+         *
+         * @param company Company name to search
+         * @param page    Page number (default is 0)
+         * @param size    Page size (default is 10)
+         * @return ResponseEntity containing paginated search results
          */
-        @Operation(summary = "Search jobs by company")
+        @Operation(summary = "Search jobs by company", description = "Search jobs by company name using case-insensitive and partial match (LIKE) with pagination")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Jobs found successfully"),
+                        @ApiResponse(responseCode = "200", description = "Search completed successfully"),
                         @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
-                        @ApiResponse(responseCode = "500", description = "Internal server error")
+                        @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping("/search/company")
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByCompany(
                         @Parameter(description = "Company name to search") @RequestParam String company,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
                         @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.searchByCompany(company, pageable);
+
                 PageResponseDTO<JobResponseDTO> response = new PageResponseDTO<>(pageData);
+
                 return ResponseEntity.ok(
                                 ApiRes.success(
                                                 response,

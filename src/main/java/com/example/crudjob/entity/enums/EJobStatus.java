@@ -1,6 +1,6 @@
 package com.example.crudjob.entity.enums;
 
-public enum JobStatus {
+public enum EJobStatus {
     Open,
     Closed
 }

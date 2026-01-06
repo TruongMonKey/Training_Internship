@@ -1,7 +1,7 @@
 package com.example.crudjob.entity;
 
-import com.example.crudjob.entity.enums.JobStatus;
-import com.example.crudjob.entity.enums.JobType;
+import com.example.crudjob.entity.enums.EJobStatus;
+import com.example.crudjob.entity.enums.EJobType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,11 +32,11 @@ public class Job {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private JobType type;
+    private EJobType type;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private JobStatus status;
+    private EJobStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -79,19 +79,19 @@ public class Job {
         this.salary = salary;
     }
 
-    public JobType getType() {
+    public EJobType getType() {
         return type;
     }
 
-    public void setType(JobType type) {
+    public void setType(EJobType type) {
         this.type = type;
     }
 
-    public JobStatus getStatus() {
+    public EJobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(JobStatus status) {
+    public void setStatus(EJobStatus status) {
         this.status = status;
     }
 
