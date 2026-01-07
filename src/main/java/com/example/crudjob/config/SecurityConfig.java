@@ -56,10 +56,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/admin/**").hasRole("ADMIN")
 
-                        // User endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/jobs/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/jobs/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasRole("ADMIN")
+                        // Manager endpoints (GET, POST, PUT)
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/**").hasAnyRole("USER", "MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasRole("ADMIN")
 
                         // Any other authenticated requests

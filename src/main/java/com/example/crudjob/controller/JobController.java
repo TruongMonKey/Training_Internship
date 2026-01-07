@@ -25,6 +25,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 
@@ -54,6 +58,8 @@ public class JobController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "201", description = "Job created successfully. Returns the created job with an auto-generated ID"),
                         @ApiResponse(responseCode = "400", description = "Invalid input data. Required fields may be missing or improperly formatted"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions to create jobs"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @PostMapping
@@ -74,20 +80,22 @@ public class JobController {
         /**
          * Retrieve all jobs with pagination support
          *
-         * @param page Page number (default is 0)
-         * @param size Number of items per page (default is 10)
+         * @param page Page number (default is 0, must be >= 0)
+         * @param size Number of items per page (default is 10, must be 1-100)
          * @return ResponseEntity containing paginated job list
          */
         @Operation(summary = "Get all jobs with pagination", description = "Retrieve all jobs with pagination support using page number and page size")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully with pagination metadata"),
-                        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters. Page or size may be negative or exceed limits"),
+                        @ApiResponse(responseCode = "400", description = "Invalid pagination parameters. Page must be >= 0, size must be 1-100"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> getAllWithPaging(
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) @Min(value = 0, message = "Page must be >= 0") int page,
+                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) @Min(value = 1, message = "Size must be >= 1") @Max(value = 100, message = "Size cannot exceed 100 records per page") int size) {
 
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.getAll(pageable);
@@ -112,6 +120,8 @@ public class JobController {
         @Operation(summary = "Get job by ID", description = "Retrieve full details of a specific job using its ID")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job retrieved successfully"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions"),
                         @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
@@ -141,6 +151,8 @@ public class JobController {
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job updated successfully"),
                         @ApiResponse(responseCode = "400", description = "Invalid input data"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions to update jobs"),
                         @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
@@ -169,6 +181,8 @@ public class JobController {
         @Operation(summary = "Delete job", description = "Delete a job from the system. This action is irreversible")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Job deleted successfully"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions to delete jobs"),
                         @ApiResponse(responseCode = "404", description = "Job not found with the provided ID"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
@@ -185,29 +199,33 @@ public class JobController {
                                                 HttpStatus.OK.value()));
         }
 
-        /* ================= SEARCH ================= */
+        /* ================= SEARCH (MUST BE BEFORE GET BY ID) ================= */
 
         /**
          * Search jobs by title
          *
-         * Case-insensitive search with LIKE (contains) support
+         * Case-insensitive search with LIKE (contains) support.
+         * NOTE: This endpoint must be defined BEFORE @GetMapping("/{id}")
+         * to prevent Spring from treating "search" as an ID.
          *
-         * @param title Job title to search
-         * @param page  Page number (default is 0)
-         * @param size  Page size (default is 10)
+         * @param title Job title to search (required, 1-255 characters)
+         * @param page  Page number (default is 0, must be >= 0)
+         * @param size  Page size (default is 10, must be 1-100)
          * @return ResponseEntity containing paginated search results
          */
         @Operation(summary = "Search jobs by title", description = "Search jobs by title using case-insensitive and partial match (LIKE) with pagination")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Search completed successfully"),
-                        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+                        @ApiResponse(responseCode = "400", description = "Invalid search parameters. Title cannot be blank, page >= 0, size 1-100"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping("/search/title")
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByTitle(
-                        @Parameter(description = "Job title to search") @RequestParam String title,
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+                        @Parameter(description = "Job title to search (required, 1-255 characters)") @RequestParam @NotBlank(message = "Title cannot be blank") @Size(min = 1, max = 255, message = "Title must be 1-255 characters") String title,
+                        @Parameter(description = "Page number (default 0, must be >= 0)") @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) @Min(value = 0, message = "Page must be >= 0") int page,
+                        @Parameter(description = "Page size (default 10, must be 1-100)") @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) @Min(value = 1, message = "Size must be >= 1") @Max(value = 100, message = "Size cannot exceed 100 records per page") int size) {
 
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.searchByTitle(title, pageable);
@@ -224,24 +242,28 @@ public class JobController {
         /**
          * Search jobs by company name
          *
-         * Case-insensitive search with LIKE (contains) support
+         * Case-insensitive search with LIKE (contains) support.
+         * NOTE: This endpoint must be defined BEFORE @GetMapping("/{id}")
+         * to prevent Spring from treating "search" as an ID.
          *
-         * @param company Company name to search
-         * @param page    Page number (default is 0)
-         * @param size    Page size (default is 10)
+         * @param company Company name to search (required, 1-255 characters)
+         * @param page    Page number (default is 0, must be >= 0)
+         * @param size    Page size (default is 10, must be 1-100)
          * @return ResponseEntity containing paginated search results
          */
         @Operation(summary = "Search jobs by company", description = "Search jobs by company name using case-insensitive and partial match (LIKE) with pagination")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Search completed successfully"),
-                        @ApiResponse(responseCode = "400", description = "Invalid search parameters"),
+                        @ApiResponse(responseCode = "400", description = "Invalid search parameters. Company cannot be blank, page >= 0, size 1-100"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid JWT token"),
+                        @ApiResponse(responseCode = "403", description = "Forbidden - User lacks required permissions"),
                         @ApiResponse(responseCode = "500", description = "Internal server error. Please try again later")
         })
         @GetMapping("/search/company")
         public ResponseEntity<ApiRes<PageResponseDTO<JobResponseDTO>>> searchByCompany(
-                        @Parameter(description = "Company name to search") @RequestParam String company,
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) int page,
-                        @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) int size) {
+                        @Parameter(description = "Company name to search (required, 1-255 characters)") @RequestParam @NotBlank(message = "Company cannot be blank") @Size(min = 1, max = 255, message = "Company must be 1-255 characters") String company,
+                        @Parameter(description = "Page number (default 0, must be >= 0)") @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_STR) @Min(value = 0, message = "Page must be >= 0") int page,
+                        @Parameter(description = "Page size (default 10, must be 1-100)") @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE_STR) @Min(value = 1, message = "Size must be >= 1") @Max(value = 100, message = "Size cannot exceed 100 records per page") int size) {
 
                 var pageable = PageRequest.of(page, size);
                 var pageData = jobService.searchByCompany(company, pageable);

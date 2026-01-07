@@ -1,6 +1,5 @@
 package com.example.crudjob.config;
 
-import com.example.crudjob.exception.BadRequestException;
 import com.example.crudjob.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,9 +46,11 @@ public class PermissionInterceptor implements HandlerInterceptor {
         // Get authentication from SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
+        // Kiểm tra user có authenticated không
         if (authentication == null || !authentication.isAuthenticated()) {
-            log.warn("User not authenticated");
-            throw new BadRequestException("User not authenticated");
+            log.warn("Request to {} {} without authentication", httpMethod, requestPath);
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated");
+            return false;
         }
 
         String username = authentication.getName();
@@ -67,14 +68,23 @@ public class PermissionInterceptor implements HandlerInterceptor {
 
         if (!hasPermission) {
             log.warn("User {} does not have permission for {} {}", username, httpMethod, requestPath);
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"success\":false,\"status\":403,\"message\":\"Access denied\"}");
+            sendErrorResponse(response, HttpServletResponse.SC_FORBIDDEN, "Access denied - insufficient permissions");
             return false;
         }
 
-        log.debug("Permission check passed for user: {} on {} {}", username, httpMethod, requestPath);
+        log.info("Permission check PASSED for user: {} on {} {}", username, httpMethod, requestPath);
         return true;
+    }
+
+    /**
+     * Send error response in JSON format
+     */
+    private void sendErrorResponse(HttpServletResponse response, int status, String message)
+            throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        String jsonResponse = String.format("{\"success\":false,\"status\":%d,\"message\":\"%s\"}", status, message);
+        response.getWriter().write(jsonResponse);
     }
 
     /**
