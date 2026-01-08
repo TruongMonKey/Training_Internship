@@ -27,14 +27,14 @@ public class Job {
     @Column(nullable = false, length = 255)
     private String title;
 
-    @NotBlank(message = "Company name is required")
-    @Size(min = 2, max = 255, message = "Company name must be between 2 and 255 characters")
-    @Column(nullable = false, length = 255)
+    // BỎ VALIDATION cho company vì sau khi encrypt sẽ dài hơn 255
+    // Validation đã được thực hiện ở JobRequestDTO
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String company;
 
-    @NotBlank(message = "Job location is required")
-    @Size(min = 2, max = 255, message = "Location must be between 2 and 255 characters")
-    @Column(nullable = false, length = 255)
+    // BỎ VALIDATION cho location vì sau khi encrypt sẽ dài hơn 255
+    // Validation đã được thực hiện ở JobRequestDTO
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String location;
 
     @NotNull(message = "Salary is required")
@@ -52,7 +52,7 @@ public class Job {
     @Enumerated(EnumType.STRING)
     private EJobStatus status;
 
-    @Size(max = 2000, message = "Description must not exceed 2000 characters")
+    // Description đã là TEXT, không cần thay đổi
     @Column(columnDefinition = "TEXT")
     private String description;
 

@@ -1,7 +1,6 @@
 package com.example.crudjob.service;
 
 import java.security.KeyPair;
-import java.util.Collection;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -30,14 +29,13 @@ public class JwtService {
     }
 
     /**
-     * Tạo Access Token với user info và roles
-     * (Permissions được xác định từ roles)
+     * Tạo Access Token chỉ với userId và username
+     * Roles sẽ được lấy từ database khi validate token
      */
-    public String generateAccessToken(Long userId, String username, Collection<String> roles) {
+    public String generateAccessToken(Long userId, String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId)
-                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(keyPair.getPrivate(), SignatureAlgorithm.RS256)

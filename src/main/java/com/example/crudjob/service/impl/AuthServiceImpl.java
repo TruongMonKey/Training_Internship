@@ -135,9 +135,10 @@ public class AuthServiceImpl implements IAuthService {
 
     /**
      * Helper method: Generate auth response với tokens
+     * Token chỉ chứa userId và username, không chứa roles
      */
     private AuthResponseDTO generateAuthResponse(User user) {
-        // Lấy roles
+        // Lấy roles (chỉ để return trong response, không lưu vào token)
         Set<String> roles = user.getRoles().stream()
                 .map(role -> role.getName().getValue())
                 .collect(Collectors.toSet());
@@ -148,8 +149,8 @@ public class AuthServiceImpl implements IAuthService {
                 .map(permission -> permission.getName())
                 .collect(Collectors.toSet());
 
-        // Generate tokens (chỉ lưu userId, username, roles - không lưu permissions)
-        String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername(), roles);
+        // Generate tokens (CHỈ lưu userId và username, KHÔNG lưu roles)
+        String accessToken = jwtService.generateAccessToken(user.getId(), user.getUsername());
         String refreshToken = jwtService.generateRefreshToken(user.getId(), user.getUsername());
 
         return AuthResponseDTO.builder()

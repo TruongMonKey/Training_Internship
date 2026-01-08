@@ -4,7 +4,7 @@ import com.example.crudjob.dto.request.JobRequestDTO;
 import com.example.crudjob.dto.response.JobResponseDTO;
 import com.example.crudjob.entity.Job;
 
-public class JobMapper {
+public class Mapper {
 
     public static Job toEntity(JobRequestDTO dto) {
         return Job.builder()
@@ -30,4 +30,5 @@ public class JobMapper {
                 .description(job.getDescription())
                 .build();
     }
+
 }

@@ -43,6 +43,16 @@ public class AppConstants {
     /** Thông báo lỗi server */
     public static final String INTERNAL_SERVER_ERROR = "Internal server error";
 
+    // ============ Encryption/Decryption Error Messages ============
+    /** Thông báo lỗi encryption */
+    public static final String ENCRYPTION_ERROR = "Data encryption failed. Please try again or contact support.";
+
+    /** Thông báo lỗi decryption */
+    public static final String DECRYPTION_ERROR = "Data decryption failed. The data may be corrupted or encrypted with a different key.";
+
+    /** Thông báo dữ liệu encrypted không hợp lệ */
+    public static final String INVALID_ENCRYPTED_DATA = "Invalid encrypted data format";
+
     // Prevent instantiation
     private AppConstants() {
         throw new AssertionError("Cannot instantiate AppConstants class");

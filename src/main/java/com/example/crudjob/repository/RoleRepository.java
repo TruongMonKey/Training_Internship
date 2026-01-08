@@ -14,4 +14,9 @@ public interface RoleRepository extends JpaRepository<Role, Long> {
      * Tìm role theo enum
      */
     Optional<Role> findByName(ERole name);
+
+    /**
+     * Kiểm tra role đã tồn tại hay chưa
+     */
+    boolean existsByName(ERole name);
 }

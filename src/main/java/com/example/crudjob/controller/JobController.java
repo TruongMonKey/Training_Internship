@@ -31,6 +31,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.validation.annotation.Validated;  // THÊM IMPORT NÀY
 
 /**
  * REST Controller for managing Job-related APIs
@@ -42,6 +43,7 @@ import org.springframework.data.domain.PageRequest;
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
 @Tag(name = "Job API", description = "CRUD Job Management")
+@Validated  // THÊM ANNOTATION NÀY để validation request parameters hoạt động
 public class JobController {
 
         private final IJobService jobService;
@@ -243,6 +245,10 @@ public class JobController {
          * Search jobs by company name
          *
          * Case-insensitive search with LIKE (contains) support.
+         * NOTE: Since company field is encrypted in database, this search
+         * decrypts all records in memory and filters them. This approach
+         * works but may have performance implications for large datasets.
+         * 
          * NOTE: This endpoint must be defined BEFORE @GetMapping("/{id}")
          * to prevent Spring from treating "search" as an ID.
          *
@@ -251,7 +257,7 @@ public class JobController {
          * @param size    Page size (default is 10, must be 1-100)
          * @return ResponseEntity containing paginated search results
          */
-        @Operation(summary = "Search jobs by company", description = "Search jobs by company name using case-insensitive and partial match (LIKE) with pagination")
+        @Operation(summary = "Search jobs by company", description = "Search jobs by company name using case-insensitive and partial match (LIKE) with pagination. Note: This searches encrypted data by decrypting in memory, which may impact performance for large datasets.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "200", description = "Search completed successfully"),
                         @ApiResponse(responseCode = "400", description = "Invalid search parameters. Company cannot be blank, page >= 0, size 1-100"),

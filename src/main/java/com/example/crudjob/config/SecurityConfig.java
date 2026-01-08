@@ -1,5 +1,6 @@
 package com.example.crudjob.config;
 
+import com.example.crudjob.repository.UserRepository;
 import com.example.crudjob.service.JwtService;
 import com.example.crudjob.service.RolePermissionResolver;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class SecurityConfig {
 
     private final JwtService jwtService;
     private final RolePermissionResolver rolePermissionResolver;
+    private final UserRepository userRepository; // THÊM UserRepository
 
     /**
      * Configure security filter chain
@@ -65,9 +67,9 @@ public class SecurityConfig {
                         // Any other authenticated requests
                         .anyRequest().authenticated())
 
-                // Add JWT authentication filter with RolePermissionResolver
+                // Add JWT authentication filter với UserRepository
                 .addFilterBefore(
-                        new JwtAuthenticationFilter(jwtService, rolePermissionResolver),
+                        new JwtAuthenticationFilter(jwtService, rolePermissionResolver, userRepository),
                         UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

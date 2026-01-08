@@ -2,14 +2,17 @@ package com.example.crudjob.config;
 
 import com.example.crudjob.entity.Permission;
 import com.example.crudjob.entity.Role;
+import com.example.crudjob.entity.User;
 import com.example.crudjob.entity.enums.ERole;
 import com.example.crudjob.repository.PermissionRepository;
 import com.example.crudjob.repository.RoleRepository;
+import com.example.crudjob.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,8 +22,10 @@ import java.util.Set;
 /**
  * Data Initialization Configuration
  *
- * Initializes default roles and permissions in database on application startup
- * Pattern: Master-Detail (Permissions created first, then assigned to Roles)
+ * Initializes default roles, permissions, and admin user in database on
+ * application startup
+ * Pattern: Master-Detail (Permissions created first, then assigned to Roles,
+ * then Admin User)
  */
 @Configuration
 @Slf4j
@@ -29,9 +34,15 @@ public class DataInitConfig {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // Admin credentials (có thể đặt trong application.yml)
+    private static final String DEFAULT_ADMIN_USERNAME = "admin";
+    private static final String DEFAULT_ADMIN_PASSWORD = "admin123";
 
     /**
-     * Initialize default roles and permissions
+     * Initialize default roles, permissions, and admin user
      */
     @Bean
     public CommandLineRunner initializeData() {
@@ -58,6 +69,11 @@ public class DataInitConfig {
             } else {
                 log.info("Roles already exist - skipping initialization");
             }
+
+            // Step 3: Initialize admin user if not exist
+            log.info("Initializing admin user...");
+            initializeAdminUser();
+            log.info("Admin user initialization completed");
 
             log.info(">>> END INITIALIZING DATABASE");
         };
@@ -151,6 +167,35 @@ public class DataInitConfig {
     }
 
     /**
+     * Create default admin user if not exists
+     * Username: admin
+     * Password: admin123 (nên đổi sau khi đăng nhập lần đầu)
+     */
+    private void initializeAdminUser() {
+        // Kiểm tra admin user đã tồn tại chưa
+        if (userRepository.existsByUsername(DEFAULT_ADMIN_USERNAME)) {
+            log.info("Admin user '{}' already exists - skipping creation", DEFAULT_ADMIN_USERNAME);
+            return;
+        }
+
+        // Lấy ADMIN role
+        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found. Please initialize roles first."));
+
+        // Tạo admin user
+        User adminUser = new User();
+        adminUser.setUsername(DEFAULT_ADMIN_USERNAME);
+        adminUser.setPassword(passwordEncoder.encode(DEFAULT_ADMIN_PASSWORD));
+        adminUser.setRoles(new HashSet<>(Set.of(adminRole)));
+
+        userRepository.save(adminUser);
+        log.info("✅ Admin user created successfully!");
+        log.info("   Username: {}", DEFAULT_ADMIN_USERNAME);
+        log.info("   Password: {}", DEFAULT_ADMIN_PASSWORD);
+        log.warn("⚠️  Please change the default password after first login!");
+    }
+
+    /**
      * Helper method to create a permission object
      */
     private Permission createPermission(String name, String apiPath, String method, String module) {
@@ -158,7 +203,6 @@ public class DataInitConfig {
         permission.setName(name);
         permission.setApiPath(apiPath);
         permission.setMethod(method);
-        permission.setModule(module);
         return permission;
     }
 }

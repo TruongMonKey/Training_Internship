@@ -30,14 +30,12 @@ springdoc:
     tags-sorter: alpha
   show-actuator: false
 
-# ================= JWT Configuration =================
-jwt:
-  keystore:
-    path: keystore/jwt-keystore.p12
+# ================= RSA Configuration =================
+security:
+  rsa:
+    keystore: classpath:keystore/jwt-keystore.p12
     password: 123456
     alias: jwtkey
-  expiration: 86400000 # 24 hours in milliseconds
-  refresh-expiration: 604800000 # 7 days in milliseconds
 
 logging:
   level:
@@ -45,4 +43,3 @@ logging:
     "[org.springframework.web]": DEBUG
     "[org.springdoc]": DEBUG
     "[com.example.crudjob]": DEBUG
-
