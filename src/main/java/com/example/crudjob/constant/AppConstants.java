@@ -1,4 +1,4 @@
-package com.example.crudjob.utils;
+package com.example.crudjob.constant;
 
 /**
  * Lớp chứa các hằng số được sử dụng trong ứng dụng

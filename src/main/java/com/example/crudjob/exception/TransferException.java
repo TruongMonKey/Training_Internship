@@ -5,30 +5,30 @@ import java.time.LocalDateTime;
 import com.example.crudjob.entity.enums.ErrorCode;
 
 /**
- * Exception thrown when decryption fails
+ * Exception thrown when transfer operation fails
  */
-public class DecryptionException extends RuntimeException {
+public class TransferException extends RuntimeException {
 
     private ErrorCode errorCode;
     private LocalDateTime timestamp;
 
-    public DecryptionException(String message) {
+    public TransferException(String message) {
         super(message);
         this.timestamp = LocalDateTime.now();
     }
 
-    public DecryptionException(String message, Throwable cause) {
+    public TransferException(String message, Throwable cause) {
         super(message, cause);
         this.timestamp = LocalDateTime.now();
     }
 
-    public DecryptionException(ErrorCode errorCode, String message) {
+    public TransferException(ErrorCode errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
         this.timestamp = LocalDateTime.now();
     }
 
-    public DecryptionException(ErrorCode errorCode, String message, Throwable cause) {
+    public TransferException(ErrorCode errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
         this.timestamp = LocalDateTime.now();

@@ -1,7 +1,6 @@
 package com.example.crudjob.config;
 
 import com.example.crudjob.entity.User;
-import com.example.crudjob.entity.enums.ERole;
 import com.example.crudjob.repository.UserRepository;
 import com.example.crudjob.service.JwtService;
 import com.example.crudjob.service.RolePermissionResolver;

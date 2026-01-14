@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.crudjob.constant.AppConstants;
 import com.example.crudjob.dto.request.JobRequestDTO;
 import com.example.crudjob.dto.response.ApiRes;
 import com.example.crudjob.dto.response.JobResponseDTO;
 import com.example.crudjob.dto.response.PageResponseDTO;
 import com.example.crudjob.service.IJobService;
-import com.example.crudjob.utils.AppConstants;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +31,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.validation.annotation.Validated;  // THÊM IMPORT NÀY
+import org.springframework.validation.annotation.Validated; // THÊM IMPORT NÀY
 
 /**
  * REST Controller for managing Job-related APIs
@@ -43,7 +43,7 @@ import org.springframework.validation.annotation.Validated;  // THÊM IMPORT NÀ
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
 @Tag(name = "Job API", description = "CRUD Job Management")
-@Validated  // THÊM ANNOTATION NÀY để validation request parameters hoạt động
+@Validated // THÊM ANNOTATION NÀY để validation request parameters hoạt động
 public class JobController {
 
         private final IJobService jobService;

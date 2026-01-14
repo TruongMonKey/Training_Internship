@@ -113,6 +113,9 @@ public class DataInitConfig {
         permissions.add(createPermission("Get a permission by id", "/api/permissions/{id}", "GET", "PERMISSIONS"));
         permissions.add(createPermission("Get all permissions", "/api/permissions", "GET", "PERMISSIONS"));
 
+        permissions.add(createPermission("Access transfer API", "/api/transfers/**", "POST", "TRANSFERS"));
+        permissions.add(createPermission("Encrypt data", "/api/transfers/encrypt", "POST", "TRANSFERS"));
+
         permissionRepository.saveAll(permissions);
     }
 

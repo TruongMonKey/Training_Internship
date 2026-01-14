@@ -1,11 +1,13 @@
 package com.example.crudjob.service;
 
+import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Service;
 
 import com.example.crudjob.config.RSAKeyProvider;
 import com.example.crudjob.dto.AESPayload;
+import com.example.crudjob.entity.enums.ErrorCode;
 import com.example.crudjob.exception.DecryptionException;
 import com.example.crudjob.exception.EncryptionException;
 import com.example.crudjob.exception.InvalidEncryptedDataException;
@@ -20,118 +22,202 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EncryptionService {
 
-    private final RSAKeyProvider rsaKeyProvider;
+        private final RSAKeyProvider rsaKeyProvider;
 
-    private static final String ENCRYPTION_ERROR_MSG = "Failed to encrypt data";
-    private static final String DECRYPTION_ERROR_MSG = "Failed to decrypt data";
-    private static final String INVALID_FORMAT_MSG = "Invalid encrypted data format. Expected format: encryptedData::iv::encryptedAesKey";
+        private static final String ENCRYPTION_ERROR_MSG = "Failed to encrypt data";
+        private static final String DECRYPTION_ERROR_MSG = "Failed to decrypt data";
 
-    /* ================= ENCRYPT ================= */
+        /* ================= ENCRYPT ================= */
 
-    /**
-     * Encrypt plain text using hybrid encryption (AES + RSA)
-     * 
-     * @param plainText Plain text to encrypt
-     * @return Encrypted string in format: encryptedData::iv::encryptedAesKey
-     * @throws EncryptionException if encryption fails
-     */
-    public String encrypt(String plainText) {
-        if (plainText == null) {
-            log.warn("Attempted to encrypt null value");
-            throw new EncryptionException("Cannot encrypt null value");
+        /**
+         * Encrypt plain text using hybrid encryption (AES + RSA)
+         * 
+         * Quy trình mã hóa:
+         * 1. Kiểm tra input plaintext
+         * 2. Sinh AES key ngẫu nhiên
+         * 3. Mã hóa plaintext bằng AES
+         * 4. Mã hóa AES key bằng RSA
+         * 5. Kết hợp kết quả: encryptedData::iv::encryptedAesKey
+         * 
+         * @param plainText Plain text cần mã hóa
+         * @return Encrypted string định dạng: encryptedData::iv::encryptedAesKey
+         * @throws EncryptionException nếu quá trình mã hóa thất bại
+         */
+        public String encrypt(String plainText) {
+                if (plainText == null) {
+                        throw new EncryptionException(
+                                        ErrorCode.ENC_PLAINTEXT_NULL,
+                                        ErrorCode.ENC_PLAINTEXT_NULL.getDefaultMessage());
+                }
+
+                if (plainText.isBlank()) {
+                        throw new EncryptionException(
+                                        ErrorCode.ENC_PLAINTEXT_BLANK,
+                                        ErrorCode.ENC_PLAINTEXT_BLANK.getDefaultMessage());
+                }
+
+                try {
+                        SecretKey aesKey = AESUtil.generateKey();
+
+                        if (aesKey == null) {
+                                throw new EncryptionException(
+                                                ErrorCode.ENC_AES_KEY_FAILED,
+                                                ErrorCode.ENC_AES_KEY_FAILED.getDefaultMessage());
+                        }
+
+                        byte[] plainBytes = plainText.getBytes(StandardCharsets.UTF_8);
+                        AESPayload aesPayload = AESUtil.encrypt(plainBytes, aesKey);
+
+                        if (aesPayload == null) {
+                                throw new EncryptionException(
+                                                ErrorCode.ENC_AES_ENCRYPT_NULL,
+                                                ErrorCode.ENC_AES_ENCRYPT_NULL.getDefaultMessage());
+                        }
+
+                        String encryptedData = aesPayload.getEncryptedData();
+                        String iv = aesPayload.getIv();
+
+                        if (encryptedData == null || encryptedData.isBlank() ||
+                                        iv == null || iv.isBlank()) {
+                                throw new EncryptionException(
+                                                ErrorCode.ENC_AES_ENCRYPT_NULL,
+                                                ErrorCode.ENC_AES_ENCRYPT_NULL.getDefaultMessage());
+                        }
+
+                        String encryptedAesKey = RSAUtil.encrypt(
+                                        aesKey.getEncoded(),
+                                        rsaKeyProvider.getPublicKey());
+
+                        if (encryptedAesKey == null || encryptedAesKey.isBlank()) {
+                                throw new EncryptionException(
+                                                ErrorCode.ENC_RSA_ENCRYPT_NULL,
+                                                ErrorCode.ENC_RSA_ENCRYPT_NULL.getDefaultMessage());
+                        }
+
+                        String encrypted = encryptedData + "::" + iv + "::" + encryptedAesKey;
+
+                        if (encrypted == null || encrypted.isBlank()) {
+                                throw new EncryptionException(
+                                                ErrorCode.ENC_RESULT_NULL,
+                                                ErrorCode.ENC_RESULT_NULL.getDefaultMessage());
+                        }
+
+                        log.info("[ENCRYPT] SUCCESS");
+                        return encrypted;
+
+                } catch (EncryptionException e) {
+                        log.error("[ENCRYPT] FAILED | errorCode={}", e.getErrorCodeValue());
+                        throw e;
+
+                } catch (IllegalArgumentException e) {
+                        log.error("[ENCRYPT] FAILED | cause={}", e.getMessage());
+                        throw new EncryptionException(
+                                        ErrorCode.ENC_AES_ENCRYPT_FAILED,
+                                        ErrorCode.ENC_AES_ENCRYPT_FAILED.getDefaultMessage());
+
+                } catch (Exception e) {
+                        log.error("[ENCRYPT] FAILED | exception={}", e.getClass().getSimpleName());
+                        throw new EncryptionException(ENCRYPTION_ERROR_MSG, e);
+                }
         }
 
-        try {
-            log.debug("Encrypting data (length: {})", plainText.length());
+        /* ================= DECRYPT ================= */
 
-            // 1. Generate AES key
-            SecretKey aesKey = AESUtil.generateKey();
+        /**
+         * Decrypt encrypted string using hybrid decryption (AES + RSA)
+         * 
+         * Quy trình giải mã:
+         * 1. Kiểm tra input encryptedText
+         * 2. Parse và validate định dạng (3 phần: encryptedData::iv::encryptedAesKey)
+         * 3. Giải mã AES key bằng RSA
+         * 4. Restore AES key từ bytes
+         * 5. Giải mã plaintext bằng AES
+         * 
+         * @param encryptedText Encrypted string định dạng:
+         *                      encryptedData::iv::encryptedAesKey
+         * @return Decrypted plain text
+         * @throws InvalidEncryptedDataException nếu định dạng không hợp lệ
+         * @throws DecryptionException           nếu quá trình giải mã thất bại
+         */
+        public String decrypt(String encryptedText) {
+                if (encryptedText == null) {
+                        throw new InvalidEncryptedDataException(
+                                        ErrorCode.DEC_INPUT_NULL,
+                                        ErrorCode.DEC_INPUT_NULL.getDefaultMessage());
+                }
 
-            // 2. Encrypt data with AES
-            AESPayload aesPayload = AESUtil.encrypt(plainText.getBytes(), aesKey);
+                if (encryptedText.isBlank()) {
+                        throw new InvalidEncryptedDataException(
+                                        ErrorCode.DEC_INPUT_BLANK,
+                                        ErrorCode.DEC_INPUT_BLANK.getDefaultMessage());
+                }
 
-            // 3. Encrypt AES key with RSA
-            String encryptedAesKey = RSAUtil.encrypt(
-                    aesKey.getEncoded(),
-                    rsaKeyProvider.getPublicKey());
+                try {
+                        String[] parts = encryptedText.split("::", -1);
+                        if (parts.length != 3) {
+                                throw new InvalidEncryptedDataException(
+                                                ErrorCode.DEC_PARTS_COUNT_INVALID,
+                                                ErrorCode.DEC_PARTS_COUNT_INVALID.getDefaultMessage());
+                        }
 
-            // 4. Combine (format: encryptedData::iv::encryptedAesKey)
-            String encrypted = aesPayload.getEncryptedData()
-                    + "::" + aesPayload.getIv()
-                    + "::" + encryptedAesKey;
+                        String encryptedData = parts[0];
+                        String iv = parts[1];
+                        String encryptedAesKey = parts[2];
 
-            log.debug("Encryption successful (encrypted length: {})", encrypted.length());
-            return encrypted;
+                        if (encryptedData.isBlank() || iv.isBlank() || encryptedAesKey.isBlank()) {
+                                throw new InvalidEncryptedDataException(
+                                                ErrorCode.DEC_ENCRYPTED_DATA_BLANK,
+                                                ErrorCode.DEC_ENCRYPTED_DATA_BLANK.getDefaultMessage());
+                        }
 
-        } catch (EncryptionException e) {
-            // Re-throw custom exceptions
-            throw e;
-        } catch (Exception e) {
-            log.error("Encryption failed: {}", e.getMessage(), e);
-            throw new EncryptionException(ENCRYPTION_ERROR_MSG, e);
+                        byte[] aesKeyBytes = RSAUtil.decrypt(
+                                        encryptedAesKey,
+                                        rsaKeyProvider.getPrivateKey());
+
+                        if (aesKeyBytes == null || aesKeyBytes.length == 0) {
+                                throw new DecryptionException(
+                                                ErrorCode.DEC_RSA_DECRYPT_NULL,
+                                                ErrorCode.DEC_RSA_DECRYPT_NULL.getDefaultMessage());
+                        }
+
+                        SecretKey aesKey = AESUtil.restoreKey(aesKeyBytes);
+
+                        if (aesKey == null) {
+                                throw new DecryptionException(
+                                                ErrorCode.DEC_AES_KEY_RESTORE_NULL,
+                                                ErrorCode.DEC_AES_KEY_RESTORE_NULL.getDefaultMessage());
+                        }
+
+                        byte[] plainBytes = AESUtil.decrypt(encryptedData, iv, aesKey);
+
+                        if (plainBytes == null || plainBytes.length == 0) {
+                                throw new DecryptionException(
+                                                ErrorCode.DEC_AES_DECRYPT_NULL,
+                                                ErrorCode.DEC_AES_DECRYPT_NULL.getDefaultMessage());
+                        }
+
+                        String decrypted = new String(plainBytes, StandardCharsets.UTF_8);
+
+                        log.info("[DECRYPT] SUCCESS");
+                        return decrypted;
+
+                } catch (InvalidEncryptedDataException e) {
+                        log.error("[DECRYPT] FAILED | errorCode={}", e.getErrorCodeValue());
+                        throw e;
+
+                } catch (DecryptionException e) {
+                        log.error("[DECRYPT] FAILED | errorCode={}", e.getErrorCodeValue());
+                        throw e;
+
+                } catch (IllegalArgumentException e) {
+                        log.error("[DECRYPT] FAILED | cause={}", e.getMessage());
+                        throw new DecryptionException(
+                                        ErrorCode.DEC_AES_DECRYPT_FAILED,
+                                        ErrorCode.DEC_AES_DECRYPT_FAILED.getDefaultMessage());
+                } catch (RuntimeException e) {
+                        log.error("[DECRYPT] FAILED | runtimeException={}", e.getClass().getSimpleName());
+                        throw e;
+                }
+
         }
-    }
-
-    /* ================= DECRYPT ================= */
-
-    /**
-     * Decrypt encrypted string using hybrid decryption (AES + RSA)
-     * 
-     * @param encryptedText Encrypted string in format:
-     *                      encryptedData::iv::encryptedAesKey
-     * @return Decrypted plain text
-     * @throws DecryptionException           if decryption fails
-     * @throws InvalidEncryptedDataException if encrypted data format is invalid
-     */
-    public String decrypt(String encryptedText) {
-        if (encryptedText == null || encryptedText.isBlank()) {
-            log.warn("Attempted to decrypt null or blank value");
-            throw new InvalidEncryptedDataException("Cannot decrypt null or blank value");
-        }
-
-        try {
-            log.debug("Decrypting data (length: {})", encryptedText.length());
-
-            // Validate format
-            String[] parts = encryptedText.split("::");
-            if (parts.length != 3) {
-                log.error("Invalid encrypted format. Expected 3 parts, got: {}", parts.length);
-                throw new InvalidEncryptedDataException(INVALID_FORMAT_MSG);
-            }
-
-            String encryptedData = parts[0];
-            String iv = parts[1];
-            String encryptedAesKey = parts[2];
-
-            // Validate parts are not empty
-            if (encryptedData.isBlank() || iv.isBlank() || encryptedAesKey.isBlank()) {
-                log.error("Invalid encrypted format. One or more parts are blank");
-                throw new InvalidEncryptedDataException(INVALID_FORMAT_MSG);
-            }
-
-            // 1. Decrypt AES key with RSA
-            byte[] aesKeyBytes = RSAUtil.decrypt(
-                    encryptedAesKey,
-                    rsaKeyProvider.getPrivateKey());
-
-            SecretKey aesKey = AESUtil.restoreKey(aesKeyBytes);
-
-            // 2. Decrypt data
-            byte[] plainBytes = AESUtil.decrypt(encryptedData, iv, aesKey);
-
-            String decrypted = new String(plainBytes);
-            log.debug("Decryption successful (decrypted length: {})", decrypted.length());
-            return decrypted;
-
-        } catch (InvalidEncryptedDataException e) {
-            // Re-throw format validation exceptions
-            throw e;
-        } catch (DecryptionException e) {
-            // Re-throw custom decryption exceptions
-            throw e;
-        } catch (Exception e) {
-            log.error("Decryption failed: {}", e.getMessage(), e);
-            throw new DecryptionException(DECRYPTION_ERROR_MSG, e);
-        }
-    }
 }
