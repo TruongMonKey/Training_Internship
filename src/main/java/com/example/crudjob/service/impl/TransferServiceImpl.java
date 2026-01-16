@@ -3,6 +3,7 @@ package com.example.crudjob.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.crudjob.dto.response.DecryptedTransferResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TransferServiceImpl implements TransferService {
 
-        private final TransactionHistoryRepository repository;
+        private final TransactionHistoryRepository transactionHistoryRepository;
         private final EncryptionService encryptionService;
 
         /**
@@ -73,48 +74,52 @@ public class TransferServiceImpl implements TransferService {
                                                                         transactionId, sourceAccount, targetAccount,
                                                                         inDebt, have, time)));
 
-                        /* ===== 3. VALIDATION ===== */
-                        validate(sourceAccount, targetAccount, inDebt, have);
+                    /* ===== 3. SAVE DEBIT ===== */
+                    TransactionHistory debit = new TransactionHistory();
+                    debit.setTransactionId(transactionId);
+                    debit.setAccount(sourceAccount); // plaintext
+                    debit.setInDebt(inDebt);
+                    debit.setHave(BigDecimal.ZERO);
+                    debit.setTransactionTime(time);
 
-                        /* ===== 4. SAVE DEBIT ===== */
-                        save(transactionId, sourceAccount, inDebt, BigDecimal.ZERO, time);
+                    transactionHistoryRepository.save(debit);
 
-                        /* ===== 5. SAVE CREDIT ===== */
-                        save(transactionId, targetAccount, BigDecimal.ZERO, have, time);
+                    /* ===== 4. SAVE CREDIT ===== */
+                    TransactionHistory credit = new TransactionHistory();
+                    credit.setTransactionId(transactionId);
+                    credit.setAccount(targetAccount); // plaintext
+                    credit.setInDebt(BigDecimal.ZERO);
+                    credit.setHave(have);
+                    credit.setTransactionTime(time);
+
+                    transactionHistoryRepository.save(credit);
+
+                    log.info("TRANSFER_SUCCESS | transactionId={}", transactionId);
 
                         log.info("TRANSFER_SUCCESS | transactionId=?");
 
                 }
                 /* ===== FORMAT / RSA ERRORS ===== */
                 catch (InvalidEncryptedDataException e) {
-                        log.error(
-                                        "TRANSFER_FAILED | {} | {}",
-                                        SecureLogUtil.mask(
-                                                        String.format("transactionId=%s | errorCode=%s",
-                                                                        transactionId, e.getErrorCodeValue())),
+                        log.error("TRANSFER_FAILED | {} | {}",
+                                        SecureLogUtil.mask(String.format("transactionId=%s | errorCode=%s",
+                                                        transactionId, e.getErrorCodeValue())),
                                         e.getClass().getSimpleName());
                         throw e;
                 } catch (DecryptionException e) {
-                        log.error(
-                                        "TRANSFER_FAILED | {} | {}",
-                                        SecureLogUtil.mask(
-                                                        String.format("transactionId=%s | errorCode=%s",
-                                                                        transactionId, e.getErrorCodeValue())),
+                        log.error("TRANSFER_FAILED | {} | {}",
+                                        SecureLogUtil.mask(String.format("transactionId=%s | errorCode=%s",
+                                                        transactionId, e.getErrorCodeValue())),
                                         e.getClass().getSimpleName());
                         throw e;
                 }
                 /* ===== VALIDATION ERRORS ===== */
                 catch (IllegalArgumentException e) {
-                        log.error(
-                                        "TRANSFER_FAILED | {}",
-                                        SecureLogUtil.mask(
-                                                        String.format(
-                                                                        "transactionId=%s | validationError=%s",
-                                                                        transactionId, e.getMessage())));
-                        throw new TransferException(
-                                        ErrorCode.TRANSFER_VALIDATION_FAILED,
-                                        "Transfer validation failed",
-                                        e);
+                        log.error("TRANSFER_FAILED | {}", SecureLogUtil.mask(String.format(
+                                        "transactionId=%s | validationError=%s",
+                                        transactionId, e.getMessage())));
+                        throw new TransferException(ErrorCode.TRANSFER_VALIDATION_FAILED,
+                                        "Transfer validation failed", e);
                 }
                 /* ===== DB / ENCRYPTION AT REST ERRORS ===== */
                 catch (TransferException e) {
@@ -150,55 +155,23 @@ public class TransferServiceImpl implements TransferService {
                 return cmd;
         }
 
-        /*
-         * =========================
-         * INTERNAL HELPERS
-         * =========================
-         */
+    @Override
+    public DecryptedTransferResponse decryptTransferCommand(
+            EncryptedTransferCommand cmd) {
 
-        private void validate(
-                        String sourceAccount,
-                        String targetAccount,
-                        BigDecimal inDebt,
-                        BigDecimal have) {
+        DecryptedTransferResponse res = new DecryptedTransferResponse();
 
-                if (sourceAccount.equals(targetAccount)) {
-                        throw new IllegalArgumentException(
-                                        ErrorCode.TRANSFER_SAME_ACCOUNT.getDefaultMessage());
-                }
+        res.setTransactionId(encryptionService.decrypt(cmd.getTransactionId()));
+        res.setSourceAccount(encryptionService.decrypt(cmd.getSourceAccount()));
+        res.setTargetAccount(encryptionService.decrypt(cmd.getTargetAccount()));
+        res.setInDebt(new BigDecimal(
+                encryptionService.decrypt(cmd.getEncryptedInDebt())));
+        res.setHave(new BigDecimal(
+                encryptionService.decrypt(cmd.getEncryptedHave())));
+        res.setTime(LocalDateTime.parse(
+                encryptionService.decrypt(cmd.getTime())));
 
-                if (inDebt.signum() <= 0 && have.signum() <= 0) {
-                        throw new IllegalArgumentException(
-                                        ErrorCode.TRANSFER_INVALID_AMOUNT.getDefaultMessage());
-                }
-        }
+        return res;
+    }
 
-        private void save(
-                        String transactionId,
-                        String plainAccount,
-                        BigDecimal inDebt,
-                        BigDecimal have,
-                        LocalDateTime time) {
-
-                try {
-                        TransactionHistory h = new TransactionHistory();
-                        h.setTransactionId(transactionId);
-                        h.setAccount(encryptionService.encrypt(plainAccount)); // AES at rest
-                        h.setInDebt(inDebt);
-                        h.setHave(have);
-                        h.setTransactionTime(time);
-
-                        repository.save(h);
-
-                } catch (EncryptionException e) {
-                        log.error("PERSIST_FAILED | {}", SecureLogUtil.mask(String.format(
-                                        "transactionId=%s | account=%s | inDebt=%s | have=%s | time=%s",
-                                        transactionId, plainAccount, inDebt, have,
-                                        time)), e);
-                        throw new TransferException(
-                                        ErrorCode.TRANSFER_PERSISTENCE_FAILED,
-                                        "Failed to encrypt account for persistence",
-                                        e);
-                }
-        }
 }

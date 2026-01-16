@@ -19,4 +19,5 @@ public interface IPermissionService {
     List<PermissionResponseDTO> getAll();
 
     void delete(Long id);
+
 }

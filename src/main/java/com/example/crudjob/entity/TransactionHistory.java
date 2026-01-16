@@ -3,6 +3,7 @@ package com.example.crudjob.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.example.crudjob.service.AesAttributeConverter;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
@@ -50,6 +51,7 @@ public class TransactionHistory {
      */
     @NotBlank(message = "Account must not be blank")
     @Column(name = "account", nullable = false, length = 512)
+    @Convert(converter = AesAttributeConverter.class)
     private String account;
 
     /**

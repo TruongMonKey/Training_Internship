@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.example.crudjob.dto.EncryptedTransferCommand;
+import com.example.crudjob.dto.response.DecryptedTransferResponse;
 
 /**
  * TransferService
@@ -35,4 +36,7 @@ public interface TransferService {
             BigDecimal inDebt,
             BigDecimal have,
             LocalDateTime time);
+
+    DecryptedTransferResponse decryptTransferCommand(EncryptedTransferCommand command);
+
 }
